@@ -72,6 +72,17 @@ python -m pip install -r requirements.txt
 Place the source spreadsheet at `data/raw/Datasets.xlsx` (sheets: `Ventas`,
 `Productos`, `Clientes`, `Potencial`, `Campañas`).
 
+### 🔄 How to load real data
+
+By default, the system runs in **Mock Mode** (demo data). To use the real Inibsa dataset:
+
+1. **Move the file:** Place your `Datasets.xlsx` inside `customer-twin/data/raw/`.
+2. **Process data:** Run the ETL pipeline:
+   ```bash
+   python -m etl.pipeline
+   ```
+3. **Restart:** The backend will automatically switch to `X-Data-Source: real`.
+
 ### 2. Run the ETL once
 
 ```bash
