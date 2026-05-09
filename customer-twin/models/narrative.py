@@ -56,6 +56,12 @@ TEMPLATE_CRUZADA = (
     "compatible con un deterioro transversal de la relación comercial."
 )
 
+TEMPLATE_OPORTUNITAT = (
+    "Cliente {id_cliente}: presenta un consumo consolidado en anestesia/commodity "
+    "({observed:.0f} u. recientes) pero nulo en la familia de producto objetivo ({categoria_h}). "
+    "Excelente candidato para venta cruzada (Next Best Product)."
+)
+
 
 TEMPLATES: dict[str, str] = {
     "FUGA_PARCIAL_COMMODITY": TEMPLATE_FUGA,
@@ -64,6 +70,7 @@ TEMPLATES: dict[str, str] = {
     "PAUSA_SOSPECHOSA": TEMPLATE_PAUSA,
     "CAMPAIGN_NO_RESPONSE": TEMPLATE_CAMPAIGN,
     "SEÑAL_CRUZADA_NEGATIVA": TEMPLATE_CRUZADA,
+    "OPORTUNITAT_CREUADA": TEMPLATE_OPORTUNITAT,
 }
 
 

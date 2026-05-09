@@ -7,8 +7,9 @@ const TIPOS = [
   { key: "DETERIORO_SOSTENIDO_TECNICO", label: "Deterioro técnico" },
   { key: "DEMANDA_NO_CAPTURADA", label: "Demanda no capturada" },
   { key: "PAUSA_SOSPECHOSA", label: "Pausa sospechosa" },
-  { key: "CAMPAIGN_NO_RESPONSE", label: "Sin respuesta a campaña" },
-  { key: "SEÑAL_CRUZADA_NEGATIVA", label: "Señal cruzada" },
+  { key: "CAMPAIGN_NO_RESPONSE", label: "Sin rpta. campaña" },
+  { key: "SEÑAL_CRUZADA_NEGATIVA", label: "Caída transversal" },
+  { key: "OPORTUNITAT_CREUADA", label: "Oportunidad cross-selling" },
 ];
 
 const BLOQUES = [

@@ -18,6 +18,7 @@ SignalType = Literal[
     "PAUSA_SOSPECHOSA",
     "CAMPAIGN_NO_RESPONSE",
     "SEÑAL_CRUZADA_NEGATIVA",
+    "OPORTUNITAT_CREUADA",
 ]
 
 Bloque = Literal["Commodities", "Productos Técnicos", "Cross"]
@@ -33,6 +34,7 @@ ALL_SIGNAL_TYPES: tuple[str, ...] = (
     "PAUSA_SOSPECHOSA",
     "CAMPAIGN_NO_RESPONSE",
     "SEÑAL_CRUZADA_NEGATIVA",
+    "OPORTUNITAT_CREUADA",
 )
 
 ACTION_ARMS: tuple[str, ...] = ("visita", "llamada", "email", "muestra", "monitorizar")

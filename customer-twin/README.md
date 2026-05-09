@@ -16,6 +16,7 @@ actionable alerts, confidence-band charts, and an optional voice briefing.
 - **Explicabilidad en el Aprendizaje (MAB Diff):** Comparativa visual en tiempo real de cómo el motor de recomendaciones aprende de cada feedback del usuario.
 - **Advanced Filtering:** Segmentación profunda por provincia, bloque comercial e índice de madurez del twin.
 - **CRM Integration Ready:** Función de exportación a CSV para volcar señales accionables directamente en herramientas comerciales (Salesforce, HubSpot, etc.).
+- **Motor de Cross-Selling (NBP):** Detección proactiva de oportunidades de crecimiento (Next Best Product) basadas en patrones de consumo consolidados en familias base.
 - **Voice Briefing:** Síntesis de voz con ElevenLabs para briefings rápidos de la situación del cliente.
 
 ---
@@ -256,7 +257,8 @@ customer-twin/
 │   ├── src/
 │   │   ├── App.jsx
 │   │   ├── components/         TopBar, Sidebar, AlertList, DetailPanel,
-│   │   │                       ConfidenceChart, BanditBars, TerritorialMap
+│   │   │                       ConfidenceChart, BanditBars, TerritorialMap,
+│   │   │                       ROIBanner
 │   │   ├── api/                client + bundled mock signals
 │   │   └── styles/globals.css  plain CSS with variables
 │   ├── vite.config.js

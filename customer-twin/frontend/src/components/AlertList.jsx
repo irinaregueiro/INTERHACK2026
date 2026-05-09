@@ -5,9 +5,10 @@ const TIPO_LABEL = {
   FUGA_PARCIAL_COMMODITY: { label: "Fuga parcial", cls: "fuga" },
   DETERIORO_SOSTENIDO_TECNICO: { label: "Deterioro técnico", cls: "deterioro" },
   DEMANDA_NO_CAPTURADA: { label: "Demanda no capturada", cls: "dnc" },
-  PAUSA_SOSPECHOSA: { label: "Pausa sospechosa", cls: "pausa" },
-  CAMPAIGN_NO_RESPONSE: { label: "Sin respuesta a campaña", cls: "campaign" },
-  "SEÑAL_CRUZADA_NEGATIVA": { label: "Señal cruzada", cls: "cross" },
+  PAUSA_SOSPECHOSA: { label: "Pausa", cls: "pausa" },
+  CAMPAIGN_NO_RESPONSE: { label: "Campaña", cls: "campaign" },
+  SEÑAL_CRUZADA_NEGATIVA: { label: "Transversal", cls: "cross" },
+  OPORTUNITAT_CREUADA: { label: "Cross-Selling", cls: "cross-sell" },
 };
 
 const STATUS_LABEL = {

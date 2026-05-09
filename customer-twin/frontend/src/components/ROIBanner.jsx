@@ -14,7 +14,7 @@ export default function ROIBanner({ signals }) {
     
     if (s.tipo === "FUGA_PARCIAL_COMMODITY" || s.tipo === "DETERIORO_SOSTENIDO_TECNICO") {
       totalFuga += impact;
-    } else if (s.tipo === "DEMANDA_NO_CAPTURADA" || s.tipo === "CAMPAIGN_NO_RESPONSE") {
+    } else if (s.tipo === "DEMANDA_NO_CAPTURADA" || s.tipo === "CAMPAIGN_NO_RESPONSE" || s.tipo === "OPORTUNITAT_CREUADA") {
       totalDnc += impact;
     }
   });
