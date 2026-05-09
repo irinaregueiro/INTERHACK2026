@@ -40,7 +40,8 @@ def validate_pipeline(df: pd.DataFrame) -> dict[str, Any]:
     if missing:
         raise ValidationError(f"Missing required columns: {sorted(missing)}")
 
-    if df["id_cliente"].dtype != object:
+    from pandas.api.types import is_string_dtype, is_object_dtype
+    if not (is_string_dtype(df["id_cliente"]) or is_object_dtype(df["id_cliente"])):
         raise ValidationError(
             f"id_cliente must be string dtype (got {df['id_cliente'].dtype}); "
             "see Tarea 1.1 in plan.md."
