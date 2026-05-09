@@ -1,4 +1,5 @@
 import React from "react";
+import ROIBanner from "./ROIBanner.jsx";
 
 const TIPO_LABEL = {
   FUGA_PARCIAL_COMMODITY: { label: "Fuga parcial", cls: "fuga" },
@@ -93,6 +94,7 @@ export default function AlertList({ signals, selected, onSelect, loading, error,
         </button>
       </div>
       <p className="subtitle">{subtitle}</p>
+      <ROIBanner signals={signals} />
       {signals.map((s) => {
         const meta = TIPO_LABEL[s.tipo] || { label: s.tipo, cls: "" };
         const status = s.status ?? "active";

@@ -11,6 +11,7 @@ actionable alerts, confidence-band charts, and an optional voice briefing.
 
 ### 🚀 Key Features (Hackathon Plus)
 
+- **Financial Impact Dashboard (ROI):** Panel global que traduce las alertas a euros (riesgo de fuga anualizado vs oportunidad DNC) para orientar el esfuerzo comercial hacia el máximo retorno.
 - **Territorial Heatmap & Hotzones:** Visualización del Top 5 de zonas con mayor concentración de señales de fuga para priorización geográfica.
 - **Explicabilidad en el Aprendizaje (MAB Diff):** Comparativa visual en tiempo real de cómo el motor de recomendaciones aprende de cada feedback del usuario.
 - **Advanced Filtering:** Segmentación profunda por provincia, bloque comercial e índice de madurez del twin.

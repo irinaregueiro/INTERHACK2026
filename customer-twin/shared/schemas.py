@@ -80,6 +80,7 @@ class Signal(BaseModel):
     confidence_band: tuple[float, float]
     indice_madurez: MaturityLevel
     score_urgencia: float
+    impacto_estimado: Optional[float] = None  # EUR impact for ROI calculations
     narrativa: str
     timestamp: datetime
     provincia: Optional[str] = None  # carried for territorial aggregation

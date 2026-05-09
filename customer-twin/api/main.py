@@ -308,6 +308,7 @@ def list_signals(
         "tipo": s.tipo,
         "semanas_fuera_banda": s.semanas_fuera_banda,
         "score_urgencia": round(s.score_urgencia, 4),
+        "impacto_estimado": s.impacto_estimado,
         "indice_madurez": s.indice_madurez,
         "provincia": s.provincia,
         "narrativa": s.narrativa,
