@@ -10,7 +10,8 @@ The output is a single-screen web dashboard with a prioritized list of
 actionable alerts, confidence-band charts, and an optional voice briefing.
 
 ---
-
+  
+  
 ## Architecture
 
 ```
