@@ -23,11 +23,13 @@ async function post(path, body) {
   return { data: await res.json() };
 }
 
-export async function fetchSignals({ tipo, bloque, status, limit = 50 } = {}) {
+export async function fetchSignals({ tipo, bloque, status, madurez, provincia, limit = 50 } = {}) {
   const params = new URLSearchParams();
   if (tipo) params.set("tipo", tipo);
   if (bloque) params.set("bloque", bloque);
   if (status) params.set("status", status);
+  if (madurez) params.set("madurez", madurez);
+  if (provincia) params.set("provincia", provincia);
   params.set("limit", String(limit));
   try {
     return await get(`/api/signals?${params.toString()}`);

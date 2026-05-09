@@ -9,6 +9,14 @@ the next commercial action.
 The output is a single-screen web dashboard with a prioritized list of
 actionable alerts, confidence-band charts, and an optional voice briefing.
 
+### 🚀 Key Features (Hackathon Plus)
+
+- **Territorial Heatmap & Hotzones:** Visualización del Top 5 de zonas con mayor concentración de señales de fuga para priorización geográfica.
+- **Explicabilidad en el Aprendizaje (MAB Diff):** Comparativa visual en tiempo real de cómo el motor de recomendaciones aprende de cada feedback del usuario.
+- **Advanced Filtering:** Segmentación profunda por provincia, bloque comercial e índice de madurez del twin.
+- **CRM Integration Ready:** Función de exportación a CSV para volcar señales accionables directamente en herramientas comerciales (Salesforce, HubSpot, etc.).
+- **Voice Briefing:** Síntesis de voz con ElevenLabs para briefings rápidos de la situación del cliente.
+
 ---
 
 ## Architecture
@@ -116,8 +124,8 @@ No secrets are hardcoded anywhere in the codebase.
 | Method | Path | Purpose |
 |--------|------|---------|
 | `GET`  | `/api/health` | Status + data source + voice availability |
-| `GET`  | `/api/signals?tipo=&bloque=&provincia=&limit=` | Active signals, sorted by urgency desc |
-| `GET`  | `/api/signals/counts` | Counts by tipo / bloque / madurez |
+| `GET`  | `/api/signals?tipo=&bloque=&provincia=&madurez=&limit=` | Active signals, sorted by urgency desc |
+| `GET`  | `/api/signals/counts` | Counts by tipo / bloque / madurez / provincia |
 | `GET`  | `/api/signals/{id}/detail` | Signal + 16-week chart history + bandit recommendation |
 | `POST` | `/api/signals/{id}/feedback` | Body: `{action, outcome}` (`outcome ∈ {acted, false_alarm, priority_up}`) |
 | `POST` | `/api/signals/{id}/voice_briefing` | ElevenLabs MP3 (returns 503 if `ELEVENLABS_API_KEY` unset) |
@@ -146,11 +154,13 @@ frontend.
    never claims fuga or churn as confirmed.
 6. The bandit bars show the Thompson-Sampled probability mass per arm. The
    recommended action is highlighted with a star.
-7. Click **"Voy a actuar"** to register a positive reward — the bandit
-   updates and the bars on the next click reflect the change.
-8. Click **"Briefing de voz"** to play an ElevenLabs MP3 of the narrative
-   (only if `ELEVENLABS_API_KEY` is set).
-9. **Filter** by signal type or bloque from the left sidebar.
+7. **Click "Voy a actuar"** to register a positive reward — the bandit
+   updates and the bars on the next click reflect the change with a
+   **visual delta comparison**.
+8. **Filter by Province** using the Territorial Heatmap on the sidebar.
+9. **Export to CSV** to simulate CRM integration of the filtered list.
+10. **Click "Briefing de voz"** to play an ElevenLabs MP3 of the narrative
+    (only if `ELEVENLABS_API_KEY` is set).
 
 ---
 
@@ -245,7 +255,7 @@ customer-twin/
 │   ├── src/
 │   │   ├── App.jsx
 │   │   ├── components/         TopBar, Sidebar, AlertList, DetailPanel,
-│   │   │                       ConfidenceChart, BanditBars
+│   │   │                       ConfidenceChart, BanditBars, TerritorialMap
 │   │   ├── api/                client + bundled mock signals
 │   │   └── styles/globals.css  plain CSS with variables
 │   ├── vite.config.js

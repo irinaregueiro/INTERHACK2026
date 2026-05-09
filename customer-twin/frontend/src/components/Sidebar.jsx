@@ -1,4 +1,5 @@
 import React from "react";
+import TerritorialMap from "./TerritorialMap.jsx";
 
 const TIPOS = [
   { key: null, label: "Todas las señales" },
@@ -16,6 +17,12 @@ const BLOQUES = [
   { key: "Cross", label: "Cross-familia" },
 ];
 
+const MADUREZ = [
+  { key: "Alto", label: "Madurez Alta" },
+  { key: "Medio", label: "Madurez Media" },
+  { key: "Bajo", label: "Madurez Baja" },
+];
+
 const STATUSES = [
   { key: null, label: "Activas (todas)" },
   { key: "active", label: "Pendientes" },
@@ -29,6 +36,7 @@ export default function Sidebar({ counts, filter, onFilter }) {
   const byTipo = counts?.by_tipo ?? {};
   const byBloque = counts?.by_bloque ?? {};
   const byStatus = counts?.by_status ?? {};
+  const byMadurez = counts?.by_madurez ?? {};
   const actionableTotal = counts?.actionable_total ?? counts?.total ?? 0;
   return (
     <nav className="sidebar">
@@ -58,7 +66,7 @@ export default function Sidebar({ counts, filter, onFilter }) {
           <button
             key={t.label}
             className={`nav-item${isActive ? " active" : ""}`}
-            onClick={() => onFilter({ ...filter, tipo: t.key, bloque: null })}
+            onClick={() => onFilter({ ...filter, tipo: t.key, bloque: null, madurez: null, provincia: null })}
           >
             <span>{t.label}</span>
             <span className="nav-count">{count}</span>
@@ -74,13 +82,33 @@ export default function Sidebar({ counts, filter, onFilter }) {
           <button
             key={b.key}
             className={`nav-item${isActive ? " active" : ""}`}
-            onClick={() => onFilter({ ...filter, tipo: null, bloque: b.key })}
+            onClick={() => onFilter({ ...filter, tipo: null, bloque: b.key, madurez: null, provincia: null })}
           >
             <span>{b.label}</span>
             <span className="nav-count">{count}</span>
           </button>
         );
       })}
+
+      <h3 style={{ marginTop: 18 }}>Por madurez</h3>
+      {MADUREZ.map((m) => {
+        const isActive = filter.madurez === m.key;
+        const count = byMadurez[m.key] ?? 0;
+        return (
+          <button
+            key={m.key}
+            className={`nav-item${isActive ? " active" : ""}`}
+            onClick={() => onFilter({ ...filter, tipo: null, bloque: null, madurez: m.key, provincia: null })}
+          >
+            <span>{m.label}</span>
+            <span className="nav-count">{count}</span>
+          </button>
+        );
+      })}
+      <TerritorialMap 
+        selectedProvincia={filter.provincia} 
+        onProvinciaSelect={(p) => onFilter({ ...filter, provincia: p })}
+      />
     </nav>
   );
 }

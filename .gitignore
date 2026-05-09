@@ -1,0 +1,12 @@
+.env
+.env.local
+__pycache__/
+*.py[cod]
+node_modules/
+dist/
+.DS_Store
+customer-twin/data/raw/*
+customer-twin/data/processed/*
+customer-twin/data/audio_cache/*
+customer-twin/venv/
+customer-twin/.venv/

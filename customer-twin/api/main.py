@@ -262,6 +262,7 @@ def list_signals(
     tipo: Optional[str] = Query(None, description="Filter by signal type."),
     bloque: Optional[str] = Query(None, description="Filter by bloque."),
     provincia: Optional[str] = Query(None),
+    madurez: Optional[str] = Query(None),
     status: Optional[str] = Query(
         None,
         description=(
@@ -283,6 +284,8 @@ def list_signals(
         signals = [s for s in signals if s.bloque == bloque]
     if provincia:
         signals = [s for s in signals if (s.provincia or "").lower() == provincia.lower()]
+    if madurez:
+        signals = [s for s in signals if s.indice_madurez == madurez]
 
     if status is not None and status not in VALID_STATUSES:
         raise HTTPException(400, detail=f"Unknown status {status!r}.")
@@ -322,6 +325,7 @@ def signal_counts(response: Response) -> dict:
     by_tipo = Counter(s.tipo for s in STATE.signals)
     by_bloque = Counter(s.bloque for s in STATE.signals)
     by_madurez = Counter(s.indice_madurez for s in STATE.signals)
+    by_provincia = Counter(s.provincia for s in STATE.signals if s.provincia)
     by_status: Counter = Counter()
     for s in STATE.signals:
         st = _status_for(s.signal_id)
@@ -333,6 +337,7 @@ def signal_counts(response: Response) -> dict:
         "by_tipo": dict(by_tipo),
         "by_bloque": dict(by_bloque),
         "by_madurez": dict(by_madurez),
+        "by_provincia": dict(by_provincia),
         "by_status": dict(by_status),
     }
 

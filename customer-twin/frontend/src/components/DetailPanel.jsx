@@ -60,6 +60,7 @@ function toastFor(outcome, action) {
 
 export default function DetailPanel({ signalId, onUpdate }) {
   const [detail, setDetail] = useState(null);
+  const [previousBandit, setPreviousBandit] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
@@ -78,6 +79,7 @@ export default function DetailPanel({ signalId, onUpdate }) {
     setAudioUrl(null);
     setVoiceErr(null);
     setDismissReason("");
+    setPreviousBandit(null);
     let cancelled = false;
     fetchSignalDetail(signalId)
       .then((d) => {
@@ -133,6 +135,7 @@ export default function DetailPanel({ signalId, onUpdate }) {
     try {
       const res = await postFeedback(signalId, action, outcome, reason);
       if (res?.bandit_recommendation) {
+        setPreviousBandit(detail.bandit);
         setDetail((prev) => ({
           ...prev,
           bandit: res.bandit_recommendation,
@@ -240,7 +243,7 @@ export default function DetailPanel({ signalId, onUpdate }) {
 
       <section className="detail-section">
         <h4>Acción recomendada</h4>
-        <BanditBars recommendation={detail.bandit} />
+        <BanditBars recommendation={detail.bandit} previousRecommendation={previousBandit} />
         <div className="feedback-row">
           <button
             className="btn primary"
