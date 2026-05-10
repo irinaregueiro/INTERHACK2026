@@ -23,13 +23,22 @@ async function post(path, body) {
   return { data: await res.json() };
 }
 
-export async function fetchSignals({ tipo, bloque, status, madurez, provincia, limit = 50 } = {}) {
+export async function fetchSignals({
+  tipo,
+  bloque,
+  status,
+  madurez,
+  provincia,
+  comunidad_autonoma,
+  limit = 50,
+} = {}) {
   const params = new URLSearchParams();
   if (tipo) params.set("tipo", tipo);
   if (bloque) params.set("bloque", bloque);
   if (status) params.set("status", status);
   if (madurez) params.set("madurez", madurez);
   if (provincia) params.set("provincia", provincia);
+  if (comunidad_autonoma) params.set("comunidad_autonoma", comunidad_autonoma);
   params.set("limit", String(limit));
   try {
     return await get(`/api/signals?${params.toString()}`);
@@ -78,12 +87,30 @@ export async function postVoiceBriefing(signalId) {
   return res.json();
 }
 
-export async function fetchTerritorial({ minCount = 2 } = {}) {
+export async function fetchTerritorialSummary() {
   try {
-    return (await get(`/api/territorial_alerts?min_count=${minCount}`)).data;
-  } catch {
-    return [];
+    return (await get("/api/territorial_summary")).data;
+  } catch (e) {
+    console.warn("territorial_summary unavailable:", e.message);
+    return null;
   }
+}
+
+export async function fetchTerritorialDiagnostics() {
+  try {
+    return (await get("/api/territorial_diagnostics")).data;
+  } catch (e) {
+    console.warn("territorial_diagnostics unavailable:", e.message);
+    return null;
+  }
+}
+
+// Legacy helper kept for any older caller — returns the new structured
+// summary so the dashboard map continues to work even if other components
+// still reference fetchTerritorial.
+export async function fetchTerritorial() {
+  const sum = await fetchTerritorialSummary();
+  return sum?.by_provincia ?? [];
 }
 
 export class VoiceDisabledError extends Error {

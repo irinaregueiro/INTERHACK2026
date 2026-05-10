@@ -31,6 +31,7 @@ from etl.mappings import (
     URGENCY_W_MADUREZ,
     URGENCY_W_PERSISTENCIA,
 )
+from etl.territorial import TerritorialMatch, normalize_provincia
 from shared.schemas import Signal
 
 from .narrative import generate_narrative
@@ -69,10 +70,22 @@ def compute_indice_madurez(history: pd.DataFrame) -> str:
 
 
 def _provincia_for(history: pd.DataFrame) -> str:
+    """Raw provincia string as it appears in the dataset (kept for legacy callers)."""
     if history.empty:
         return "Desconocida"
     val = history["provincia"].dropna().iloc[0] if "provincia" in history.columns else None
     return str(val) if val else "Desconocida"
+
+
+def _territorial_for(history: pd.DataFrame) -> tuple[str, TerritorialMatch]:
+    """Resolve the canonical territorial match for a client's history.
+
+    Returns the raw provincia string (preserved for audit) and a
+    :class:`TerritorialMatch` with the canonical name, CCAA and coordinates.
+    """
+    raw = _provincia_for(history)
+    match = normalize_provincia(raw)
+    return raw, match
 
 
 def _last_n_observations(history: pd.DataFrame, n: int) -> pd.DataFrame:
@@ -420,7 +433,8 @@ def run_detection(
         per_cat: dict[str, pd.DataFrame] = {
             cat: g for cat, g in client_df.groupby("categoria_h")
         }
-        provincia = _provincia_for(client_df)
+        provincia_raw, territorial = _territorial_for(client_df)
+        provincia = territorial.provincia or provincia_raw or "Desconocida"
 
         client_signals: list[Signal] = []
 
@@ -485,6 +499,11 @@ def run_detection(
                     narrativa=generate_narrative(s["tipo"], narrative_ctx),
                     timestamp=timestamp_now,
                     provincia=provincia,
+                    provincia_raw=provincia_raw,
+                    comunidad_autonoma=territorial.comunidad_autonoma,
+                    lat=territorial.lat,
+                    lon=territorial.lon,
+                    territorial_source=territorial.source,
                 )
                 client_signals.append(signal)
 
@@ -525,6 +544,11 @@ def run_detection(
                 narrativa=generate_narrative("SEÑAL_CRUZADA_NEGATIVA", narrative_ctx),
                 timestamp=timestamp_now,
                 provincia=provincia,
+                provincia_raw=provincia_raw,
+                comunidad_autonoma=territorial.comunidad_autonoma,
+                lat=territorial.lat,
+                lon=territorial.lon,
+                territorial_source=territorial.source,
             ))
 
         # Cross-selling opportunity (OPORTUNITAT_CREUADA)
@@ -571,6 +595,11 @@ def run_detection(
                         narrativa=generate_narrative("OPORTUNITAT_CREUADA", narrative_ctx_op),
                         timestamp=timestamp_now,
                         provincia=provincia,
+                        provincia_raw=provincia_raw,
+                        comunidad_autonoma=territorial.comunidad_autonoma,
+                        lat=territorial.lat,
+                        lon=territorial.lon,
+                        territorial_source=territorial.source,
                     ))
 
         out.extend(client_signals)

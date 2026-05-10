@@ -8,7 +8,7 @@ function isoWeek(d) {
   return 1 + Math.round((dt - firstThursday) / (7 * 86400 * 1000));
 }
 
-export default function TopBar({ dataSource, totalSignals }) {
+export default function TopBar({ dataSource, totalSignals, showMap, onToggleMap }) {
   const week = isoWeek(new Date());
   return (
     <header className="topbar">
@@ -20,6 +20,15 @@ export default function TopBar({ dataSource, totalSignals }) {
         </span>
       </div>
       <div className="meta">
+        {onToggleMap && (
+          <button
+            className={`map-toggle-pill${showMap ? " active" : ""}`}
+            onClick={onToggleMap}
+            title="Mostrar / ocultar mapa territorial"
+          >
+            {showMap ? "Ocultar mapa" : "Ver mapa territorial"}
+          </button>
+        )}
         <span><span className="live-dot" /> en vivo</span>
         <span>Semana {week}</span>
         <span>{totalSignals ?? "…"} señales activas</span>

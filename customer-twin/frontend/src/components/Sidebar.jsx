@@ -1,5 +1,4 @@
 import React from "react";
-import TerritorialMap from "./TerritorialMap.jsx";
 
 const TIPOS = [
   { key: null, label: "Todas las señales" },
@@ -106,10 +105,22 @@ export default function Sidebar({ counts, filter, onFilter }) {
           </button>
         );
       })}
-      <TerritorialMap 
-        selectedProvincia={filter.provincia} 
-        onProvinciaSelect={(p) => onFilter({ ...filter, provincia: p })}
-      />
+      {(filter.provincia || filter.comunidad_autonoma) && (
+        <div className="sidebar-territorial-pill">
+          <span className="sidebar-territorial-label">Filtro territorial</span>
+          <span className="sidebar-territorial-value">
+            {filter.provincia || filter.comunidad_autonoma}
+          </span>
+          <button
+            className="sidebar-territorial-clear"
+            onClick={() =>
+              onFilter({ ...filter, provincia: null, comunidad_autonoma: null })
+            }
+          >
+            ×
+          </button>
+        </div>
+      )}
     </nav>
   );
 }
