@@ -77,12 +77,14 @@ cd frontend && npm install && cd ..
 ### 2. Dades reals (Inibsa)
 1. Posa el fitxer `Datasets.xlsx` a la carpeta `data/raw/`.
 
-### 3. Engegar tot el projecte (Una sola comanda) 🚀
-Hem creat un script que s'encarrega de tot: processar les dades (ETL) si és necessari, i engegar el Backend i el Frontend alhora:
+### 3. Engegar tot el projecte (Comanda Universal) 🚀
+**Funciona igual a Windows i a Ubuntu/Linux.** Aquest script s'encarrega de tot (ETL + Backend + Frontend):
+
 ```bash
-./run_all.sh
+# Ubuntu / Mac / Windows
+python run.py
 ```
-Això obrirà:
+Això obrirà automàticament:
 - **Dashboard:** http://127.0.0.1:5173
 - **Documentació API:** http://127.0.0.1:8000/docs
 
