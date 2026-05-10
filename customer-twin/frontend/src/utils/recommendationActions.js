@@ -13,16 +13,18 @@ const FALLBACK_LABELS = {
   monitorizar: "Pasar a vigilancia",
 };
 
+const DEFAULT_CLIENT_EMAIL = "cliente@empresa.com";
+
 function clientEmail(client) {
-  if (!client) return null;
+  if (!client) return DEFAULT_CLIENT_EMAIL;
   const candidate =
     client.email_cliente ||
     client.email ||
     client.correo ||
     null;
-  if (typeof candidate !== "string") return null;
+  if (typeof candidate !== "string") return DEFAULT_CLIENT_EMAIL;
   const trimmed = candidate.trim();
-  return trimmed.length > 0 ? trimmed : null;
+  return trimmed.length > 0 ? trimmed : DEFAULT_CLIENT_EMAIL;
 }
 
 // Customer-facing copy: no internal jargon, no metrics, no IDs or category
