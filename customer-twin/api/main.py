@@ -63,6 +63,9 @@ from .bandit import ContextualBandit, context_for_signal
 from .voice import VoiceDisabledError, is_enabled as voice_is_enabled, synthesize
 
 log = logging.getLogger(__name__)
+ROOT_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIST = ROOT_DIR / "frontend" / "dist"
+FRONTEND_INDEX = FRONTEND_DIST / "index.html"
 
 # --- App + middleware ------------------------------------------------------
 
@@ -758,3 +761,44 @@ def reload_data() -> dict:
     STATE.signals = _load_real_signals(max_clients=cap)
     STATE.data_source = "real"
     return {"status": "ok", "n_signals": len(STATE.signals)}
+
+
+# --- Production frontend ---------------------------------------------------
+
+
+def _frontend_file(path: str) -> FileResponse:
+    """Serve the Vite production build when it exists.
+
+    Local development still uses the Vite dev server. In Docker/Vultr, the
+    Dockerfile builds `frontend/dist` and FastAPI serves both the dashboard
+    and the API from one origin.
+    """
+    if not FRONTEND_INDEX.exists():
+        raise HTTPException(
+            404,
+            detail="Frontend build not found. Run `npm run build` in frontend/.",
+        )
+
+    if path:
+        dist_root = FRONTEND_DIST.resolve()
+        candidate = (FRONTEND_DIST / path).resolve()
+        try:
+            candidate.relative_to(dist_root)
+        except ValueError:
+            raise HTTPException(404, detail="Not found.")
+        if candidate.is_file():
+            return FileResponse(candidate)
+
+    return FileResponse(FRONTEND_INDEX)
+
+
+@app.get("/", include_in_schema=False)
+def frontend_index() -> FileResponse:
+    return _frontend_file("")
+
+
+@app.get("/{path:path}", include_in_schema=False)
+def frontend_spa(path: str) -> FileResponse:
+    if path.startswith("api/"):
+        raise HTTPException(404, detail="API endpoint not found.")
+    return _frontend_file(path)

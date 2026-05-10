@@ -1,0 +1,52 @@
+name: Deploy to Vultr
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VULTR_HOST }}
+          username: ${{ secrets.VULTR_USER }}
+          key: ${{ secrets.VULTR_SSH_KEY }}
+          port: 22
+          script: |
+            # Set the deployment directory
+            APP_DIR="/opt/customer-twin"
+            
+            # Clone or pull the latest changes
+            if [ ! -d "$APP_DIR/.git" ]; then
+              sudo mkdir -p "$APP_DIR"
+              sudo chown -R $USER:$USER "$APP_DIR"
+              git clone https://github.com/irinaregueiro/INTERHACK2026.git "$APP_DIR"
+            else
+              cd "$APP_DIR"
+              git fetch origin
+              git reset --hard origin/main
+            fi
+            
+            # Navigate to the app directory
+            cd "$APP_DIR/customer-twin"
+            
+            # Ensure proper environment variables for docker-compose (e.g. ELEVENLABS API KEY)
+            # Make sure .env is created on the server manually or injected here
+            if [ ! -f ".env" ]; then
+              echo "Warning: .env file not found. Ensure required variables are set."
+            fi
+            
+            # Build and deploy with Docker Compose
+            docker-compose down
+            docker-compose up -d --build
+            
+            # Clean up old images
+            docker image prune -f

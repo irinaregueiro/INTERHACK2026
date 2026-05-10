@@ -333,7 +333,8 @@ def load_client_history(
 
 
 def is_processed_data_available(out_dir: Path = PROC_DIR) -> bool:
-    return (out_dir / OUT_WEEKLY.name).exists()
+    required = (OUT_WEEKLY.name, OUT_POTENCIAL.name, OUT_PRICE.name)
+    return all((out_dir / name).exists() for name in required)
 
 
 # --- CLI -------------------------------------------------------------------

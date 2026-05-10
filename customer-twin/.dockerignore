@@ -1,15 +1,19 @@
-# Python
+.env
+.env.local
+.git
+.gitignore
+.pytest_cache
 __pycache__/
 *.py[cod]
 *.egg-info/
+.npm-cache/
 .venv/
 venv/
-.env
-.env.local
-.pytest_cache/
-.npm-cache/
 
-# Data
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
@@ -17,15 +21,5 @@ data/processed/*
 data/audio_cache/*
 !data/audio_cache/.gitkeep
 
-# Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
-
-# OS
 .DS_Store
 Thumbs.db
-
-# IDE
-.vscode/
-.idea/

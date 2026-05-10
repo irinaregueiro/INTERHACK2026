@@ -102,11 +102,88 @@ Assegura't de tenir un fitxer `.env` a la carpeta arrel amb:
 
 | Var | Default | Purpose |
 |-----|---------|---------|
+| `MONGO_DB_LINK` | (unset) | Optional MongoDB Atlas URI for persisted signal statuses and bandit state. |
+| `MONGO_DB_NAME` | `InibsaProject` | MongoDB database name. |
 | `ELEVENLABS_API_KEY` | (unset) | Required to enable the voice briefing endpoint. When missing, `/voice_briefing` returns HTTP 503 `{"error": "voice_disabled"}` and the frontend hides the audio player. |
-| `ELEVENLABS_VOICE_ID` | `21m00Tcm4TlvDq8ikWAM` | ElevenLabs voice ID. |
+| `ELEVENLABS_VOICE_ID` | `EXAVITQu4vr4xnSDxMaL` | ElevenLabs voice ID. |
 | `CT_MAX_CLIENTS` | `1500` | Cap on number of clients processed at startup. Lower for snappier dev cycles, higher for production runs. |
+| `CT_RUN_ETL_ON_START` | `auto` | In Docker, runs ETL from `data/raw/Datasets.xlsx` when processed parquet files are missing. Set to `0` to disable. |
 
 No secrets are hardcoded anywhere in the codebase.
+
+---
+
+## Deploy on Vultr
+
+The app is Docker-ready for Vultr. The container builds the Vite dashboard,
+serves it through FastAPI, and exposes a single web port: `8000`.
+
+### Option A — Vultr server with Docker Compose
+
+1. Create a Vultr instance with Docker installed, then clone this repo.
+2. Enter the app directory:
+
+```bash
+cd INTERHACK2026/customer-twin
+```
+
+3. Create the runtime environment file:
+
+```bash
+cp .env.example .env
+```
+
+Fill only the values you need, especially `MONGO_DB_LINK`,
+`MONGO_DB_NAME`, and `ELEVENLABS_API_KEY`.
+
+4. For real data, upload the Excel file here:
+
+```text
+data/raw/Datasets.xlsx
+```
+
+On first container start, the image runs ETL if that Excel file exists and
+any processed parquet output is missing. Without real data, the API
+intentionally falls back to bundled mock signals for a safe demo.
+
+5. Build and start:
+
+```bash
+docker compose up -d --build
+```
+
+Make sure TCP port `8000` is open in the Vultr firewall. To serve on standard
+HTTP instead, set `PORT=80` in `.env` before starting Compose.
+
+6. Open:
+
+```text
+http://YOUR_VULTR_IP:8000
+http://YOUR_VULTR_IP:8000/api/health
+```
+
+Useful operations:
+
+```bash
+docker compose logs -f customer-twin
+docker compose restart customer-twin
+docker compose down
+```
+
+### Option B — Coolify on Vultr
+
+If deploying through Coolify, create an application from the Git repo and use:
+
+| Setting | Value |
+|---------|-------|
+| Base directory | `INTERHACK2026/customer-twin` |
+| Build type | Dockerfile |
+| Dockerfile | `Dockerfile` |
+| Port | `8000` |
+
+Add the same environment variables from `.env.example` in Coolify. If you need
+real data, attach persistent storage for `/app/data` and place
+`Datasets.xlsx` under `/app/data/raw/`.
 
 ---
 

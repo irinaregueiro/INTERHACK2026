@@ -10,3 +10,7 @@ customer-twin/data/processed/*
 customer-twin/data/audio_cache/*
 customer-twin/venv/
 customer-twin/.venv/
+.claude/
+plan.md
+Datasets.xlsx
+*.pdf

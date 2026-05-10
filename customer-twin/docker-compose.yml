@@ -1,0 +1,15 @@
+services:
+  customer-twin:
+    build: .
+    container_name: customer-twin
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      PORT: 8000
+    volumes:
+      - ./data/raw:/app/data/raw
+      - ./data/processed:/app/data/processed
+      - ./data/audio_cache:/app/data/audio_cache
