@@ -85,7 +85,12 @@ class Signal(BaseModel):
     impacto_estimado: Optional[float] = None  # EUR impact for ROI calculations
     narrativa: str
     timestamp: datetime
-    provincia: Optional[str] = None  # carried for territorial aggregation
+    provincia: Optional[str] = None              # canonical provincia (or None if unmapped)
+    provincia_raw: Optional[str] = None          # raw value seen in the dataset (debug / audit)
+    comunidad_autonoma: Optional[str] = None     # canonical CCAA name
+    lat: Optional[float] = None                  # capital approx — for proportional-symbol map
+    lon: Optional[float] = None
+    territorial_source: Optional[str] = None     # 'name' | 'postal' | 'city' | 'unknown' | 'non_spain'
 
     @property
     def signal_id(self) -> str:

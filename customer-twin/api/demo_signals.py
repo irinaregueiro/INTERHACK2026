@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+from etl.territorial import normalize_provincia
 from shared.schemas import Signal
 
 
@@ -99,10 +100,18 @@ def build_mock_signals() -> list[Signal]:
     ]
 
     for sm in samples:
+        raw_prov = sm.get("provincia")
+        match = normalize_provincia(raw_prov)
+        sm["provincia"] = match.provincia or raw_prov
         out.append(Signal(
             **sm,
             timestamp=now - timedelta(hours=1),
             narrativa=_mock_narrative(sm),
+            provincia_raw=raw_prov,
+            comunidad_autonoma=match.comunidad_autonoma,
+            lat=match.lat,
+            lon=match.lon,
+            territorial_source=match.source,
         ))
     return out
 

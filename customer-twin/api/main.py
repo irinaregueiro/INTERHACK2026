@@ -45,6 +45,11 @@ from etl.pipeline import (
     load_sow,
     load_weekly,
 )
+from etl.territorial import (
+    CCAA_OFICIALES,
+    PROVINCIAS,
+    list_canonical_provincias,
+)
 from models.signal_detector import run_detection
 from shared.schemas import (
     ALL_SIGNAL_TYPES,
@@ -284,6 +289,7 @@ def list_signals(
     tipo: Optional[str] = Query(None, description="Filter by signal type."),
     bloque: Optional[str] = Query(None, description="Filter by bloque."),
     provincia: Optional[str] = Query(None),
+    comunidad_autonoma: Optional[str] = Query(None),
     madurez: Optional[str] = Query(None),
     status: Optional[str] = Query(
         None,
@@ -306,6 +312,11 @@ def list_signals(
         signals = [s for s in signals if s.bloque == bloque]
     if provincia:
         signals = [s for s in signals if (s.provincia or "").lower() == provincia.lower()]
+    if comunidad_autonoma:
+        signals = [
+            s for s in signals
+            if (s.comunidad_autonoma or "").lower() == comunidad_autonoma.lower()
+        ]
     if madurez:
         signals = [s for s in signals if s.indice_madurez == madurez]
 
@@ -333,6 +344,9 @@ def list_signals(
         "impacto_estimado": s.impacto_estimado,
         "indice_madurez": s.indice_madurez,
         "provincia": s.provincia,
+        "comunidad_autonoma": s.comunidad_autonoma,
+        "lat": s.lat,
+        "lon": s.lon,
         "narrativa": s.narrativa,
         "status": st["status"],
         "action_taken": st["action_taken"],
@@ -349,6 +363,7 @@ def signal_counts(response: Response) -> dict:
     by_bloque = Counter(s.bloque for s in STATE.signals)
     by_madurez = Counter(s.indice_madurez for s in STATE.signals)
     by_provincia = Counter(s.provincia for s in STATE.signals if s.provincia)
+    by_ccaa = Counter(s.comunidad_autonoma for s in STATE.signals if s.comunidad_autonoma)
     by_status: Counter = Counter()
     for s in STATE.signals:
         st = _status_for(s.signal_id)
@@ -361,6 +376,7 @@ def signal_counts(response: Response) -> dict:
         "by_bloque": dict(by_bloque),
         "by_madurez": dict(by_madurez),
         "by_provincia": dict(by_provincia),
+        "by_ccaa": dict(by_ccaa),
         "by_status": dict(by_status),
     }
 
@@ -493,25 +509,230 @@ def serve_audio(filename: str) -> FileResponse:
     return FileResponse(path, media_type="audio/mpeg")
 
 
-@app.get("/api/territorial_alerts")
-def territorial_alerts(response: Response, weeks: int = 4, min_count: int = 3) -> list[dict]:
-    """Provinces with ≥`min_count` FUGA_PARCIAL_COMMODITY alerts in the last `weeks` weeks.
+_UNMAPPED_RAW = {"", "desconocida", "desconocido", "n/a", "na", "none", "null"}
 
-    The dataset is a static historical snapshot, so "in the last `weeks` weeks"
-    refers to the timestamp of signal generation (which is `now`). For an MVP
-    demo we treat all currently-active FUGA signals as the recent window.
+
+def _has_canonical_location(s: Signal) -> bool:
+    """A signal is *mapped* iff it has a canonical provincia from the registry."""
+    return bool(s.provincia and s.provincia in PROVINCIAS)
+
+
+def _is_actionable(signal_id: str) -> bool:
+    """Lifecycle filter used by the territorial endpoints.
+
+    The map is meant to drive commercial action — alerts that have been
+    dismissed must not be plotted, but everything else (active, in_progress,
+    high_priority, watching, resolved) is fair game so the operator can see
+    the full footprint of where work has happened or is happening.
+    """
+    return _status_for(signal_id)["status"] != "dismissed"
+
+
+def _serialize_for_map(s: Signal) -> dict:
+    """Lightweight signal projection used by territorial endpoints."""
+    return {
+        "signal_id": s.signal_id,
+        "id_cliente": s.id_cliente,
+        "categoria_h": s.categoria_h,
+        "bloque": s.bloque,
+        "tipo": s.tipo,
+        "indice_madurez": s.indice_madurez,
+        "score_urgencia": round(s.score_urgencia, 4),
+        "impacto_estimado": s.impacto_estimado,
+        "provincia": s.provincia,
+        "provincia_raw": s.provincia_raw,
+        "comunidad_autonoma": s.comunidad_autonoma,
+        "lat": s.lat,
+        "lon": s.lon,
+        "territorial_source": s.territorial_source,
+    }
+
+
+@app.get("/api/territorial_alerts")
+def territorial_alerts(
+    response: Response,
+    tipo: Optional[str] = Query(None, description="Filter by signal type."),
+    bloque: Optional[str] = Query(None, description="Filter by bloque."),
+    madurez: Optional[str] = Query(None),
+    comunidad_autonoma: Optional[str] = Query(None),
+    provincia: Optional[str] = Query(None),
+    include_unmapped: bool = Query(True, description="Include signals without a resolved provincia."),
+) -> dict:
+    """Per-alert territorial payload for the dashboard map.
+
+    Returns every actionable signal projected with provincia + CCAA + lat/lon,
+    so the frontend can plot the full population (proportional bubbles,
+    choropleth fill, ranking). Dismissed alerts are filtered out.
     """
     _attach_data_source(response)
-    counts = Counter()
+    if tipo and tipo not in ALL_SIGNAL_TYPES:
+        raise HTTPException(400, detail=f"Unknown tipo {tipo!r}.")
+
+    items: list[dict] = []
     for s in STATE.signals:
-        if s.tipo == "FUGA_PARCIAL_COMMODITY" and s.provincia:
-            counts[(s.provincia, s.categoria_h)] += 1
-    out = [
-        {"provincia": prov, "categoria_h": cat, "n_alertas": n}
-        for (prov, cat), n in counts.items()
-        if n >= min_count
-    ]
-    return sorted(out, key=lambda d: -d["n_alertas"])
+        if not _is_actionable(s.signal_id):
+            continue
+        if tipo and s.tipo != tipo:
+            continue
+        if bloque and s.bloque != bloque:
+            continue
+        if madurez and s.indice_madurez != madurez:
+            continue
+        if comunidad_autonoma and (s.comunidad_autonoma or "").lower() != comunidad_autonoma.lower():
+            continue
+        if provincia and (s.provincia or "").lower() != provincia.lower():
+            continue
+        if not include_unmapped and not _has_canonical_location(s):
+            continue
+        items.append(_serialize_for_map(s))
+
+    return {
+        "total": len(items),
+        "alerts": items,
+    }
+
+
+@app.get("/api/territorial_summary")
+def territorial_summary(response: Response) -> dict:
+    """Aggregated counts ready for the map: per-provincia and per-CCAA rollups.
+
+    Each entry includes:
+      - n_alerts                  total alertas
+      - by_tipo                   desglose por tipo de señal
+      - by_madurez                desglose por madurez
+      - impacto_total_eur         suma de `impacto_estimado` (cuando exista)
+      - lat / lon / svg_x / svg_y coordenadas para el mapa (provinciales)
+      - top_categoria             categoría predominante
+    """
+    _attach_data_source(response)
+
+    by_provincia: dict[str, dict] = {}
+    by_ccaa: dict[str, dict] = {}
+    unmapped_count = 0
+    non_spain_count = 0
+
+    for s in STATE.signals:
+        if not _is_actionable(s.signal_id):
+            continue
+        if not _has_canonical_location(s):
+            if s.territorial_source == "non_spain":
+                non_spain_count += 1
+            else:
+                unmapped_count += 1
+            continue
+
+        bucket = by_provincia.setdefault(s.provincia, {
+            "provincia": s.provincia,
+            "comunidad_autonoma": s.comunidad_autonoma,
+            "n_alerts": 0,
+            "by_tipo": {},
+            "by_madurez": {},
+            "by_categoria": {},
+            "impacto_total_eur": 0.0,
+            "lat": s.lat,
+            "lon": s.lon,
+        })
+        bucket["n_alerts"] += 1
+        bucket["by_tipo"][s.tipo] = bucket["by_tipo"].get(s.tipo, 0) + 1
+        bucket["by_madurez"][s.indice_madurez] = bucket["by_madurez"].get(s.indice_madurez, 0) + 1
+        bucket["by_categoria"][s.categoria_h] = bucket["by_categoria"].get(s.categoria_h, 0) + 1
+        if s.impacto_estimado:
+            bucket["impacto_total_eur"] += float(s.impacto_estimado)
+
+        if s.comunidad_autonoma:
+            cbucket = by_ccaa.setdefault(s.comunidad_autonoma, {
+                "comunidad_autonoma": s.comunidad_autonoma,
+                "n_alerts": 0,
+                "by_tipo": {},
+                "by_madurez": {},
+                "provincias": set(),
+                "impacto_total_eur": 0.0,
+            })
+            cbucket["n_alerts"] += 1
+            cbucket["by_tipo"][s.tipo] = cbucket["by_tipo"].get(s.tipo, 0) + 1
+            cbucket["by_madurez"][s.indice_madurez] = cbucket["by_madurez"].get(s.indice_madurez, 0) + 1
+            cbucket["provincias"].add(s.provincia)
+            if s.impacto_estimado:
+                cbucket["impacto_total_eur"] += float(s.impacto_estimado)
+
+    # Enrich with svg coords + top categoria, then turn sets into lists.
+    provincia_list = []
+    for prov_name, bucket in by_provincia.items():
+        ref = PROVINCIAS.get(prov_name)
+        if ref:
+            bucket["svg_x"] = ref.svg_x
+            bucket["svg_y"] = ref.svg_y
+            bucket["lat"] = ref.lat
+            bucket["lon"] = ref.lon
+        bucket["top_categoria"] = (
+            max(bucket["by_categoria"].items(), key=lambda kv: kv[1])[0]
+            if bucket["by_categoria"] else None
+        )
+        provincia_list.append(bucket)
+    provincia_list.sort(key=lambda d: -d["n_alerts"])
+
+    ccaa_list = []
+    for c in by_ccaa.values():
+        c["provincias"] = sorted(c["provincias"])
+        ccaa_list.append(c)
+    ccaa_list.sort(key=lambda d: -d["n_alerts"])
+
+    total_actionable = sum(b["n_alerts"] for b in provincia_list)
+    return {
+        "total_actionable": total_actionable + unmapped_count + non_spain_count,
+        "mapped_alerts": total_actionable,
+        "unmapped_alerts": unmapped_count,
+        "non_spanish_alerts": non_spain_count,
+        "provincia_count": len(provincia_list),
+        "ccaa_count": len(ccaa_list),
+        "by_provincia": provincia_list,
+        "by_ccaa": ccaa_list,
+    }
+
+
+@app.get("/api/territorial_diagnostics")
+def territorial_diagnostics(response: Response) -> dict:
+    """Diagnostic endpoint: how well territorial normalization worked.
+
+    Useful for the demo to *prove* the map is plotting nearly all alerts.
+    """
+    _attach_data_source(response)
+    by_source: Counter = Counter()
+    raw_provincia_freq: Counter = Counter()
+    unmapped_examples: list[str] = []
+
+    total = len(STATE.signals)
+    actionable = 0
+    mapped = 0
+
+    for s in STATE.signals:
+        if not _is_actionable(s.signal_id):
+            continue
+        actionable += 1
+        by_source[s.territorial_source or "unknown"] += 1
+        if _has_canonical_location(s):
+            mapped += 1
+        else:
+            if s.provincia_raw and s.provincia_raw not in unmapped_examples:
+                unmapped_examples.append(s.provincia_raw)
+            if len(unmapped_examples) > 20:
+                unmapped_examples = unmapped_examples[:20]
+        if s.provincia_raw:
+            raw_provincia_freq[s.provincia_raw] += 1
+
+    coverage = (mapped / actionable) if actionable else 1.0
+    return {
+        "total_signals": total,
+        "actionable_signals": actionable,
+        "mapped_signals": mapped,
+        "unmapped_signals": actionable - mapped,
+        "coverage_pct": round(coverage * 100, 2),
+        "by_source": dict(by_source),
+        "top_raw_provincias": dict(raw_provincia_freq.most_common(20)),
+        "unmapped_examples": unmapped_examples,
+        "canonical_provincias": [p.nombre for p in list_canonical_provincias()],
+        "canonical_ccaa": list(CCAA_OFICIALES),
+    }
 
 
 @app.post("/api/admin/reload")
