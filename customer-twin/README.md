@@ -11,6 +11,7 @@ actionable alerts, confidence-band charts, and an optional voice briefing.
 
 ### 🚀 Key Features (Hackathon Plus)
 
+- **Persistent State (MongoDB):** Los estados de las alertas y el aprendizaje del motor de recomendaciones persisten entre reinicios mediante integración con MongoDB Atlas.
 - **Financial Impact Dashboard (ROI):** Panel global que traduce las alertas a euros (riesgo de fuga anualizado vs oportunidad DNC) para orientar el esfuerzo comercial hacia el máximo retorno.
 - **Territorial Heatmap & Hotzones:** Visualización del Top 5 de zonas con mayor concentración de señales de fuga para priorización geográfica.
 - **Explicabilidad en el Aprendizaje (MAB Diff):** Comparativa visual en tiempo real de cómo el motor de recomendaciones aprende de cada feedback del usuario.
@@ -258,6 +259,7 @@ customer-twin/
 │   └── narrative.py            deterministic Spanish templates
 ├── api/
 │   ├── main.py                 FastAPI app
+│   ├── db.py                   MongoDB persistence layer
 │   ├── bandit.py               Thompson Sampling
 │   ├── scoring.py              urgency rescoring helper
 │   ├── voice.py                ElevenLabs synth (env-var, cached)
