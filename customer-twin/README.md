@@ -61,63 +61,38 @@ Datasets.xlsx
 
 ---
 
-## Setup
+## Setup & Execució Ràpida
 
-### 1. Backend (Python 3.10+)
+Si vols posar el projecte en marxa ràpidament per a una demo, segueix aquests passos:
 
+### 1. Configuració inicial (Només la primera vegada)
 ```bash
-cd customer-twin
+# Instal·lar dependències del Backend
 python -m pip install -r requirements.txt
+
+# Instal·lar dependències del Frontend
+cd frontend && npm install && cd ..
 ```
 
-Place the source spreadsheet at `data/raw/Datasets.xlsx` (sheets: `Ventas`,
-`Productos`, `Clientes`, `Potencial`, `Campañas`).
+### 2. Dades reals (Inibsa)
+1. Posa el fitxer `Datasets.xlsx` a la carpeta `data/raw/`.
 
-### 🔄 How to load real data
-
-By default, the system runs in **Mock Mode** (demo data). To use the real Inibsa dataset:
-
-1. **Move the file:** Place your `Datasets.xlsx` inside `customer-twin/data/raw/`.
-2. **Process data:** Run the ETL pipeline:
-   ```bash
-   python -m etl.pipeline
-   ```
-3. **Restart:** The backend will automatically switch to `X-Data-Source: real`.
-
-### 2. Run the ETL once
-
+### 3. Engegar tot el projecte (Una sola comanda) 🚀
+Hem creat un script que s'encarrega de tot: processar les dades (ETL) si és necessari, i engegar el Backend i el Frontend alhora:
 ```bash
-python -m etl.pipeline
-# writes data/processed/{client_category_week,sow_potencial,precio_medio_categoria}.parquet
+./run_all.sh
 ```
+Això obrirà:
+- **Dashboard:** http://127.0.0.1:5173
+- **Documentació API:** http://127.0.0.1:8000/docs
 
-### 3. Start the API
+---
 
-```bash
-python -m uvicorn api.main:app --reload --port 8000
-# OpenAPI docs at http://127.0.0.1:8000/docs
-# Health check at  http://127.0.0.1:8000/api/health
-```
-
-When `data/processed/client_category_week.parquet` is missing, the API
-falls back to a small bundled mock dataset. Responses include
-`X-Data-Source: mock` so the dashboard can show a banner.
-
-### 4. Start the frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-# http://127.0.0.1:5173
-```
-
-The dev server proxies `/api/*` to `http://127.0.0.1:8000`. Override with
-`API_BASE` env var, e.g. `API_BASE=http://other-host:9000 npm run dev`.
-
-If the backend is unreachable the frontend automatically shows bundled mock
-signals (`src/api/mockSignals.json`). Real and mock paths use exactly the
-same JSON shape.
+## Variables d'Entorn (.env)
+Assegura't de tenir un fitxer `.env` a la carpeta arrel amb:
+- `MONGO_DB_LINK`: El teu enllaç de MongoDB Atlas.
+- `MONGO_DB_NAME`: InibsaProject
+- `key_elevenlabs`: La teva clau d'ElevenLabs (opcional).
 
 ---
 
