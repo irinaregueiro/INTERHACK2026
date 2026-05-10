@@ -9,14 +9,7 @@ import {
 
 import BanditBars from "./BanditBars.jsx";
 import ConfidenceChart from "./ConfidenceChart.jsx";
-
-const ACTION_LABELS = {
-  visita: "Crear tarea: visita",
-  llamada: "Crear tarea: llamada",
-  email: "Preparar email",
-  muestra: "Solicitar muestra",
-  monitorizar: "Pasar a vigilancia",
-};
+import { getRecommendationAction } from "../utils/recommendationActions.js";
 
 const STATUS_LABEL = {
   active: { label: "Pendiente", cls: "pending" },
@@ -125,7 +118,10 @@ export default function DetailPanel({ signalId, onUpdate }) {
   const status = detail.status?.status ?? "active";
   const stMeta = STATUS_LABEL[status];
   const recommendedAction = detail.bandit?.recommended_action ?? "visita";
-  const acceptLabel = ACTION_LABELS[recommendedAction] ?? "Aceptar recomendación";
+  const actionDescriptor = getRecommendationAction(recommendedAction, {
+    signal: sig,
+    detail,
+  });
 
   const submit = async (action, outcome, reason = null) => {
     if (busy) return;
@@ -153,6 +149,12 @@ export default function DetailPanel({ signalId, onUpdate }) {
   };
 
   const onAccept = () => submit(recommendedAction, "acted");
+  const onAcceptExternal = () => {
+    if (actionDescriptor.href) {
+      window.open(actionDescriptor.href, "_blank", "noopener,noreferrer");
+    }
+    submit(recommendedAction, "acted");
+  };
   const onDismiss = () => submit(recommendedAction, "false_alarm", dismissReason || null);
   const onPriority = () => submit(recommendedAction, "priority_up");
 
@@ -242,14 +244,29 @@ export default function DetailPanel({ signalId, onUpdate }) {
         <h4>Acción recomendada</h4>
         <BanditBars recommendation={detail.bandit} />
         <div className="feedback-row">
-          <button
-            className="btn primary"
-            onClick={onAccept}
-            disabled={busy}
-            title={`Aceptar la recomendación: ${recommendedAction}`}
-          >
-            {acceptLabel}
-          </button>
+          {actionDescriptor.kind === "external" ? (
+            <button
+              className="btn primary"
+              onClick={onAcceptExternal}
+              disabled={busy || actionDescriptor.disabled}
+              title={
+                actionDescriptor.disabled
+                  ? actionDescriptor.disabledReason
+                  : actionDescriptor.hint ?? `Aceptar la recomendación: ${recommendedAction}`
+              }
+            >
+              {actionDescriptor.label}
+            </button>
+          ) : (
+            <button
+              className="btn primary"
+              onClick={onAccept}
+              disabled={busy}
+              title={`Aceptar la recomendación: ${recommendedAction}`}
+            >
+              {actionDescriptor.label}
+            </button>
+          )}
           <button
             className="btn"
             onClick={onPriority}
@@ -282,6 +299,11 @@ export default function DetailPanel({ signalId, onUpdate }) {
             Briefing de voz
           </button>
         </div>
+        {actionDescriptor.kind === "external" && actionDescriptor.disabled && (
+          <div className="small" style={{ marginTop: 8, color: "var(--warn)" }}>
+            {actionDescriptor.disabledReason}
+          </div>
+        )}
         {audioUrl && (
           <div className="audio-block">
             <audio controls autoPlay src={audioUrl} />

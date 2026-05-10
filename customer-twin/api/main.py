@@ -108,6 +108,17 @@ VALID_STATUSES: set[str] = {
 ACTIONABLE_STATUSES: set[str] = {"active", "high_priority", "in_progress"}
 VALID_OUTCOMES: set[str] = {"acted", "false_alarm", "priority_up", "watching"}
 
+# Demo email domain used to fabricate a per-client default address. Overridable
+# via env so a real CRM mapping can replace this without code changes.
+DEMO_EMAIL_DOMAIN: str = os.environ.get("CT_DEMO_EMAIL_DOMAIN", "demo.customer-twin.local")
+
+
+def _default_client_email(id_cliente: str) -> str:
+    """Deterministic placeholder email so the Gmail compose flow is demoable
+    against real signals. Replace with a real CRM lookup when one exists."""
+    return f"cliente.{id_cliente}@{DEMO_EMAIL_DOMAIN}"
+
+
 DEFAULT_STATUS: dict = {
     "status": "active",
     "action_taken": None,
@@ -307,6 +318,7 @@ def list_signals(
         "score_urgencia": round(s.score_urgencia, 4),
         "indice_madurez": s.indice_madurez,
         "provincia": s.provincia,
+        "email_cliente": _default_client_email(s.id_cliente),
         "narrativa": s.narrativa,
         "status": st["status"],
         "action_taken": st["action_taken"],
@@ -345,8 +357,10 @@ def signal_detail(signal_id: str, response: Response) -> dict:
         raise HTTPException(404, detail=f"Signal {signal_id!r} not found.")
     signal = idx[signal_id]
     bandit_rec = STATE.bandit.recommend(context_for_signal(signal))
+    signal_dict = signal.model_dump()
+    signal_dict["email_cliente"] = _default_client_email(signal.id_cliente)
     return {
-        "signal": signal.model_dump(),
+        "signal": signal_dict,
         "status": _status_for(signal_id),
         "history": _history_for_chart(signal),
         "bandit": bandit_rec.model_dump(),

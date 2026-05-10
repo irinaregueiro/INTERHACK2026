@@ -12,6 +12,7 @@
     "expected_value": 32,
     "observed_value": 14,
     "confidence_band": [22, 44],
+    "email_cliente": "compras.1000123456@cliente-demo.com",
     "narrativa": "[demo mock] Cliente 1000123456 en Categoria C1 con señal FUGA_PARCIAL_COMMODITY (4 semanas fuera de banda)."
   },
   {
@@ -27,6 +28,7 @@
     "expected_value": 16,
     "observed_value": 5,
     "confidence_band": [11, 22],
+    "email_cliente": "pedidos.1000234567@cliente-demo.com",
     "narrativa": "[demo mock] Cliente 1000234567 en Categoria C2 con señal FUGA_PARCIAL_COMMODITY (3 semanas fuera de banda)."
   },
   {
@@ -72,6 +74,7 @@
     "expected_value": 18,
     "observed_value": 24,
     "confidence_band": [6, 30],
+    "email_cliente": "contacto.1000456789@cliente-demo.com",
     "narrativa": "[demo mock] PAUSA_SOSPECHOSA para 1000456789."
   },
   {
@@ -87,6 +90,7 @@
     "expected_value": 46,
     "observed_value": 12,
     "confidence_band": [28, 64],
+    "email_cliente": "marketing.1000789012@cliente-demo.com",
     "narrativa": "[demo mock] CAMPAIGN_NO_RESPONSE para 1000789012."
   },
   {
