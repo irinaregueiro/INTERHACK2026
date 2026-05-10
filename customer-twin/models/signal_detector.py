@@ -481,6 +481,7 @@ def run_detection(
                     confidence_band=tuple(s["confidence_band"]),
                     indice_madurez=maturity,
                     score_urgencia=float(urgency),
+                    impacto_estimado=float(s.get("dnc_estimada") * precio) if s.get("dnc_estimada") else None,
                     narrativa=generate_narrative(s["tipo"], narrative_ctx),
                     timestamp=timestamp_now,
                     provincia=provincia,
@@ -520,10 +521,57 @@ def run_detection(
                 confidence_band=cross_raw["confidence_band"],
                 indice_madurez=maturity,
                 score_urgencia=float(urgency),
+                impacto_estimado=None,
                 narrativa=generate_narrative("SEÑAL_CRUZADA_NEGATIVA", narrative_ctx),
                 timestamp=timestamp_now,
                 provincia=provincia,
             ))
+
+        # Cross-selling opportunity (OPORTUNITAT_CREUADA)
+        # If client buys Categoria C1 heavily but is missing another category
+        cats_bought = set(per_cat.keys())
+        all_cats = set(CATEGORIA_TO_BLOQUE.keys())
+        missing_cats = all_cats - cats_bought
+        
+        c1_hist = per_cat.get("Categoria C1")
+        if c1_hist is not None and not c1_hist.empty:
+            recent_c1 = c1_hist.sort_values("semana").tail(12)
+            c1_units = float(recent_c1["unidades_netas"].sum())
+            if c1_units > 20:  # Consumo consolidado en Anestesia
+                for missing_cat in missing_cats:
+                    bloque_missing = CATEGORIA_TO_BLOQUE.get(missing_cat, "Cross")
+                    urgency_op = score_urgencia(
+                        dnc_estimada=10.0,  # Proxy for potential
+                        semanas_fuera_banda=0,
+                        indice_madurez="Alto",
+                        precio_medio=float(price_lookup.get(missing_cat, 0.0)),
+                    )
+                    narrative_ctx_op = {
+                        "id_cliente": cid,
+                        "categoria_h": missing_cat,
+                        "bloque": bloque_missing,
+                        "indice_madurez": "Alto",
+                        "observed_value": c1_units,
+                    }
+                    client_signals.append(Signal(
+                        id_cliente=cid,
+                        categoria_h=missing_cat,
+                        bloque=bloque_missing,
+                        tipo="OPORTUNITAT_CREUADA",
+                        semanas_fuera_banda=0,
+                        captura_actual=None,
+                        captura_historica=None,
+                        dnc_estimada=10.0,
+                        expected_value=0.0,
+                        observed_value=c1_units,
+                        confidence_band=(0.0, 0.0),
+                        indice_madurez="Alto",
+                        score_urgencia=float(urgency_op * 0.8), # Slightly lower urgency than retention
+                        impacto_estimado=10.0 * float(price_lookup.get(missing_cat, 0.0)),
+                        narrativa=generate_narrative("OPORTUNITAT_CREUADA", narrative_ctx_op),
+                        timestamp=timestamp_now,
+                        provincia=provincia,
+                    ))
 
         out.extend(client_signals)
 

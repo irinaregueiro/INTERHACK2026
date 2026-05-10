@@ -201,6 +201,7 @@ a { color: var(--brand); }
 .tipo-badge.pausa     { background: #f0e8ff; color: #6c4bb6; }
 .tipo-badge.campaign  { background: #ffe8d2; color: #b3530c; }
 .tipo-badge.cross     { background: #14213d11; color: #14213d; }
+.tipo-badge.cross-sell{ background: var(--success-soft); color: var(--success); }
 
 .status-badge {
   font-size: 11px; padding: 3px 7px; border-radius: 999px; font-weight: 600;

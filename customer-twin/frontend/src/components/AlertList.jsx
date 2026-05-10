@@ -1,12 +1,14 @@
 import React from "react";
+import ROIBanner from "./ROIBanner.jsx";
 
 const TIPO_LABEL = {
   FUGA_PARCIAL_COMMODITY: { label: "Fuga parcial", cls: "fuga" },
   DETERIORO_SOSTENIDO_TECNICO: { label: "Deterioro técnico", cls: "deterioro" },
   DEMANDA_NO_CAPTURADA: { label: "Demanda no capturada", cls: "dnc" },
-  PAUSA_SOSPECHOSA: { label: "Pausa sospechosa", cls: "pausa" },
-  CAMPAIGN_NO_RESPONSE: { label: "Sin respuesta a campaña", cls: "campaign" },
-  "SEÑAL_CRUZADA_NEGATIVA": { label: "Señal cruzada", cls: "cross" },
+  PAUSA_SOSPECHOSA: { label: "Pausa", cls: "pausa" },
+  CAMPAIGN_NO_RESPONSE: { label: "Campaña", cls: "campaign" },
+  SEÑAL_CRUZADA_NEGATIVA: { label: "Transversal", cls: "cross" },
+  OPORTUNITAT_CREUADA: { label: "Cross-Selling", cls: "cross-sell" },
 };
 
 const STATUS_LABEL = {
@@ -34,6 +36,32 @@ function urgencyClass(score) {
   return "low";
 }
 
+function exportToCsv(signals) {
+  if (!signals || !signals.length) return;
+  const headers = ["Cliente", "Categoría", "Tipo", "Bloque", "Score Urgencia", "Madurez", "Provincia", "Semanas Fuera Banda", "Status", "Acción"];
+  const rows = signals.map(s => [
+    s.id_cliente,
+    s.categoria_h,
+    s.tipo,
+    s.bloque,
+    s.score_urgencia.toFixed(4),
+    s.indice_madurez,
+    s.provincia ?? "",
+    s.semanas_fuera_banda,
+    s.status ?? "active",
+    s.action_taken ?? ""
+  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+  
+  const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `customer_twin_alerts_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 export default function AlertList({ signals, selected, onSelect, loading, error, statusFilter }) {
   if (loading) {
     return (
@@ -56,8 +84,18 @@ export default function AlertList({ signals, selected, onSelect, loading, error,
     : `${signals.length} alertas accionables priorizadas (prioridad máxima primero, luego por urgencia).`;
   return (
     <main className="alerts">
-      <h2>{title}</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h2>{title}</h2>
+        <button 
+          onClick={() => exportToCsv(signals)}
+          className="csv-btn"
+          style={{ padding: "6px 12px", background: "var(--brand-accent)", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: 500 }}
+        >
+          Exportar a CSV
+        </button>
+      </div>
       <p className="subtitle">{subtitle}</p>
+      <ROIBanner signals={signals} />
       {signals.map((s) => {
         const meta = TIPO_LABEL[s.tipo] || { label: s.tipo, cls: "" };
         const status = s.status ?? "active";

@@ -18,6 +18,7 @@ SignalType = Literal[
     "PAUSA_SOSPECHOSA",
     "CAMPAIGN_NO_RESPONSE",
     "SEÑAL_CRUZADA_NEGATIVA",
+    "OPORTUNITAT_CREUADA",
 ]
 
 Bloque = Literal["Commodities", "Productos Técnicos", "Cross"]
@@ -33,6 +34,7 @@ ALL_SIGNAL_TYPES: tuple[str, ...] = (
     "PAUSA_SOSPECHOSA",
     "CAMPAIGN_NO_RESPONSE",
     "SEÑAL_CRUZADA_NEGATIVA",
+    "OPORTUNITAT_CREUADA",
 )
 
 ACTION_ARMS: tuple[str, ...] = ("visita", "llamada", "email", "muestra", "monitorizar")
@@ -80,6 +82,7 @@ class Signal(BaseModel):
     confidence_band: tuple[float, float]
     indice_madurez: MaturityLevel
     score_urgencia: float
+    impacto_estimado: Optional[float] = None  # EUR impact for ROI calculations
     narrativa: str
     timestamp: datetime
     provincia: Optional[str] = None  # carried for territorial aggregation

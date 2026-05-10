@@ -9,7 +9,7 @@ import TopBar from "./components/TopBar.jsx";
 export default function App() {
   const [signals, setSignals] = useState([]);
   const [counts, setCounts] = useState(null);
-  const [filter, setFilter] = useState({ tipo: null, bloque: null, status: null });
+  const [filter, setFilter] = useState({ tipo: null, bloque: null, status: null, madurez: null, provincia: null });
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,6 +24,8 @@ export default function App() {
           tipo: filter.tipo,
           bloque: filter.bloque,
           status: filter.status,
+          madurez: filter.madurez,
+          provincia: filter.provincia,
           limit: 200,
         }),
         fetchCounts(),
@@ -38,7 +40,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [filter.tipo, filter.bloque, filter.status]);
+  }, [filter.tipo, filter.bloque, filter.status, filter.madurez, filter.provincia]);
 
   useEffect(() => {
     refresh();

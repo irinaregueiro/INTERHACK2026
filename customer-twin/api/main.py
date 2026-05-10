@@ -53,6 +53,7 @@ from shared.schemas import (
     parse_signal_id,
 )
 
+from . import db
 from .bandit import ContextualBandit, context_for_signal
 from .voice import VoiceDisabledError, is_enabled as voice_is_enabled, synthesize
 
@@ -140,7 +141,7 @@ def _load_real_signals(max_clients: int | None = None) -> list[Signal]:
 
 
 def _load_mock_signals() -> list[Signal]:
-    from .demo_signals import build_mock_signals  # local import → mock-only path
+    from .demo_signals import build_mock_signals
     return build_mock_signals()
 
 
@@ -156,12 +157,32 @@ def _bootstrap() -> None:
             STATE.data_source = "real"
             log.info("API booted with %d real signals (cap=%d clients).",
                      len(STATE.signals), cap)
-            return
         except Exception as e:  # pragma: no cover - hardening
             log.exception("Real signal loading failed; falling back to mock: %s", e)
-    log.warning("Processed parquet not found — serving MOCK signals.")
-    STATE.signals = _load_mock_signals()
-    STATE.data_source = "mock"
+            STATE.signals = _load_mock_signals()
+            STATE.data_source = "mock"
+    else:
+        log.warning("Processed parquet not found — serving MOCK signals.")
+        STATE.signals = _load_mock_signals()
+        STATE.data_source = "mock"
+
+    # Load DB state
+    db_statuses = db.load_all_signal_statuses()
+    if db_statuses:
+        STATE.signal_status = db_statuses
+        log.info("Loaded %d signal statuses from MongoDB.", len(db_statuses))
+    
+    db_bandit = db.load_bandit_state()
+    if db_bandit:
+        STATE.bandit.load_state(db_bandit)
+        log.info("Loaded bandit state from MongoDB.")
+    
+    # Verify user's specific collection
+    twins_count = db.get_customer_twins_count()
+    if twins_count > 0:
+        log.info(f"Verified connection to 'CustomerTwins' collection: found {twins_count} documents.")
+    else:
+        log.warning("Connected to MongoDB, but 'CustomerTwins' collection is empty or not found.")
 
 
 # --- Helpers ---------------------------------------------------------------
@@ -199,6 +220,7 @@ def _set_status(
         rec["dismiss_reason"] = dismiss_reason
     rec["updated_at"] = datetime.now().isoformat(timespec="seconds")
     STATE.signal_status[signal_id] = rec
+    db.save_signal_status(signal_id, rec)
     return rec
 
 
@@ -273,6 +295,7 @@ def list_signals(
     tipo: Optional[str] = Query(None, description="Filter by signal type."),
     bloque: Optional[str] = Query(None, description="Filter by bloque."),
     provincia: Optional[str] = Query(None),
+    madurez: Optional[str] = Query(None),
     status: Optional[str] = Query(
         None,
         description=(
@@ -294,6 +317,8 @@ def list_signals(
         signals = [s for s in signals if s.bloque == bloque]
     if provincia:
         signals = [s for s in signals if (s.provincia or "").lower() == provincia.lower()]
+    if madurez:
+        signals = [s for s in signals if s.indice_madurez == madurez]
 
     if status is not None and status not in VALID_STATUSES:
         raise HTTPException(400, detail=f"Unknown status {status!r}.")
@@ -316,6 +341,7 @@ def list_signals(
         "tipo": s.tipo,
         "semanas_fuera_banda": s.semanas_fuera_banda,
         "score_urgencia": round(s.score_urgencia, 4),
+        "impacto_estimado": s.impacto_estimado,
         "indice_madurez": s.indice_madurez,
         "provincia": s.provincia,
         "email_cliente": _default_client_email(s.id_cliente),
@@ -334,6 +360,7 @@ def signal_counts(response: Response) -> dict:
     by_tipo = Counter(s.tipo for s in STATE.signals)
     by_bloque = Counter(s.bloque for s in STATE.signals)
     by_madurez = Counter(s.indice_madurez for s in STATE.signals)
+    by_provincia = Counter(s.provincia for s in STATE.signals if s.provincia)
     by_status: Counter = Counter()
     for s in STATE.signals:
         st = _status_for(s.signal_id)
@@ -345,6 +372,7 @@ def signal_counts(response: Response) -> dict:
         "by_tipo": dict(by_tipo),
         "by_bloque": dict(by_bloque),
         "by_madurez": dict(by_madurez),
+        "by_provincia": dict(by_provincia),
         "by_status": dict(by_status),
     }
 

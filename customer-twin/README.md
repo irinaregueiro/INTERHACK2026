@@ -9,6 +9,17 @@ the next commercial action.
 The output is a single-screen web dashboard with a prioritized list of
 actionable alerts, confidence-band charts, and an optional voice briefing.
 
+### 🚀 Key Features (Hackathon Plus)
+
+- **Persistent State (MongoDB):** Los estados de las alertas y el aprendizaje del motor de recomendaciones persisten entre reinicios mediante integración con MongoDB Atlas.
+- **Financial Impact Dashboard (ROI):** Panel global que traduce las alertas a euros (riesgo de fuga anualizado vs oportunidad DNC) para orientar el esfuerzo comercial hacia el máximo retorno.
+- **Territorial Heatmap & Hotzones:** Visualización del Top 5 de zonas con mayor concentración de señales de fuga para priorización geográfica.
+- **Explicabilidad en el Aprendizaje (MAB Diff):** Comparativa visual en tiempo real de cómo el motor de recomendaciones aprende de cada feedback del usuario.
+- **Advanced Filtering:** Segmentación profunda por provincia, bloque comercial e índice de madurez del twin.
+- **CRM Integration Ready:** Función de exportación a CSV para volcar señales accionables directamente en herramientas comerciales (Salesforce, HubSpot, etc.).
+- **Motor de Cross-Selling (NBP):** Detección proactiva de oportunidades de crecimiento (Next Best Product) basadas en patrones de consumo consolidados en familias base.
+- **Voice Briefing:** Síntesis de voz con ElevenLabs para briefings rápidos de la situación del cliente.
+
 ---
 
 ## Architecture
@@ -50,52 +61,40 @@ Datasets.xlsx
 
 ---
 
-## Setup
+## Setup & Execució Ràpida
 
-### 1. Backend (Python 3.10+)
+Si vols posar el projecte en marxa ràpidament per a una demo, segueix aquests passos:
 
+### 1. Configuració inicial (Només la primera vegada)
 ```bash
-cd customer-twin
+# Instal·lar dependències del Backend
 python -m pip install -r requirements.txt
+
+# Instal·lar dependències del Frontend
+cd frontend && npm install && cd ..
 ```
 
-Place the source spreadsheet at `data/raw/Datasets.xlsx` (sheets: `Ventas`,
-`Productos`, `Clientes`, `Potencial`, `Campañas`).
+### 2. Dades reals (Inibsa)
+1. Posa el fitxer `Datasets.xlsx` a la carpeta `data/raw/`.
 
-### 2. Run the ETL once
+### 3. Engegar tot el projecte (Comanda Universal) 🚀
+**Funciona igual a Windows i a Ubuntu/Linux.** Aquest script s'encarrega de tot (ETL + Backend + Frontend):
 
 ```bash
-python -m etl.pipeline
-# writes data/processed/{client_category_week,sow_potencial,precio_medio_categoria}.parquet
+# Ubuntu / Mac / Windows
+python run.py
 ```
+Això obrirà automàticament:
+- **Dashboard:** http://127.0.0.1:5173
+- **Documentació API:** http://127.0.0.1:8000/docs
 
-### 3. Start the API
+---
 
-```bash
-python -m uvicorn api.main:app --reload --port 8000
-# OpenAPI docs at http://127.0.0.1:8000/docs
-# Health check at  http://127.0.0.1:8000/api/health
-```
-
-When `data/processed/client_category_week.parquet` is missing, the API
-falls back to a small bundled mock dataset. Responses include
-`X-Data-Source: mock` so the dashboard can show a banner.
-
-### 4. Start the frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-# http://127.0.0.1:5173
-```
-
-The dev server proxies `/api/*` to `http://127.0.0.1:8000`. Override with
-`API_BASE` env var, e.g. `API_BASE=http://other-host:9000 npm run dev`.
-
-If the backend is unreachable the frontend automatically shows bundled mock
-signals (`src/api/mockSignals.json`). Real and mock paths use exactly the
-same JSON shape.
+## Variables d'Entorn (.env)
+Assegura't de tenir un fitxer `.env` a la carpeta arrel amb:
+- `MONGO_DB_LINK`: El teu enllaç de MongoDB Atlas.
+- `MONGO_DB_NAME`: InibsaProject
+- `key_elevenlabs`: La teva clau d'ElevenLabs (opcional).
 
 ---
 
@@ -116,8 +115,8 @@ No secrets are hardcoded anywhere in the codebase.
 | Method | Path | Purpose |
 |--------|------|---------|
 | `GET`  | `/api/health` | Status + data source + voice availability |
-| `GET`  | `/api/signals?tipo=&bloque=&provincia=&limit=` | Active signals, sorted by urgency desc |
-| `GET`  | `/api/signals/counts` | Counts by tipo / bloque / madurez |
+| `GET`  | `/api/signals?tipo=&bloque=&provincia=&madurez=&limit=` | Active signals, sorted by urgency desc |
+| `GET`  | `/api/signals/counts` | Counts by tipo / bloque / madurez / provincia |
 | `GET`  | `/api/signals/{id}/detail` | Signal + 16-week chart history + bandit recommendation |
 | `POST` | `/api/signals/{id}/feedback` | Body: `{action, outcome}` (`outcome ∈ {acted, false_alarm, priority_up}`) |
 | `POST` | `/api/signals/{id}/voice_briefing` | ElevenLabs MP3 (returns 503 if `ELEVENLABS_API_KEY` unset) |
@@ -146,11 +145,13 @@ frontend.
    never claims fuga or churn as confirmed.
 6. The bandit bars show the Thompson-Sampled probability mass per arm. The
    recommended action is highlighted with a star.
-7. Click **"Voy a actuar"** to register a positive reward — the bandit
-   updates and the bars on the next click reflect the change.
-8. Click **"Briefing de voz"** to play an ElevenLabs MP3 of the narrative
-   (only if `ELEVENLABS_API_KEY` is set).
-9. **Filter** by signal type or bloque from the left sidebar.
+7. **Click "Voy a actuar"** to register a positive reward — the bandit
+   updates and the bars on the next click reflect the change with a
+   **visual delta comparison**.
+8. **Filter by Province** using the Territorial Heatmap on the sidebar.
+9. **Export to CSV** to simulate CRM integration of the filtered list.
+10. **Click "Briefing de voz"** to play an ElevenLabs MP3 of the narrative
+    (only if `ELEVENLABS_API_KEY` is set).
 
 ---
 
@@ -235,6 +236,7 @@ customer-twin/
 │   └── narrative.py            deterministic Spanish templates
 ├── api/
 │   ├── main.py                 FastAPI app
+│   ├── db.py                   MongoDB persistence layer
 │   ├── bandit.py               Thompson Sampling
 │   ├── scoring.py              urgency rescoring helper
 │   ├── voice.py                ElevenLabs synth (env-var, cached)
@@ -245,7 +247,8 @@ customer-twin/
 │   ├── src/
 │   │   ├── App.jsx
 │   │   ├── components/         TopBar, Sidebar, AlertList, DetailPanel,
-│   │   │                       ConfidenceChart, BanditBars
+│   │   │                       ConfidenceChart, BanditBars, TerritorialMap,
+│   │   │                       ROIBanner
 │   │   ├── api/                client + bundled mock signals
 │   │   └── styles/globals.css  plain CSS with variables
 │   ├── vite.config.js
